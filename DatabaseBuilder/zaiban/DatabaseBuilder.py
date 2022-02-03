@@ -34,7 +34,6 @@ def insert_name_into_db(connection, type_id, en_name):
     name_command = f"INSERT INTO {TYPE_ID_AND_EN_NAME} VALUES (?, ?);"
     connection.execute(name_command, (type_id, en_name))
 
-
 def populate_blueprints_and_products():
     with sqlite3.connect(Constants.DATABASE_PATH) as connection:
 

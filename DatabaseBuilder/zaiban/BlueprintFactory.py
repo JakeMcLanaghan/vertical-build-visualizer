@@ -4,6 +4,7 @@ import Item
 from CustomExceptions import NoBpFoundException
 from Constants import *
 from CustomExceptions import NoBpFoundException
+import Stockpile
 
 import sqlite3
 
@@ -13,6 +14,8 @@ class BlueprintFactory:
     def __init__(self, database_path):
         self.products = {}
         self.database = sqlite3.connect(DATABASE_PATH)
+        self.stockpile = Stockpile.Stockpile()
+        self.stockpile.process_stockpile_file()
 
     def get_blueprint_id_and_quantity_produced_for_product(self, product_id):
         todo = self.database.execute(f"SELECT {BLUEPRINT_ID_COLUMN_NAME}, {QUANTITY_COLUMN_NAME} FROM {BLUEPRINTS_AND_PRODUCTS_TABLE} WHERE {PRODUCT_ID_COLUMN_NAME} = '{product_id}'").fetchall()
@@ -29,7 +32,7 @@ class BlueprintFactory:
         blueprint_id, quantity_produced_per_run = self.get_blueprint_id_and_quantity_produced_for_product(product_id)
 
         inputs = self.get_inputs_for_blueprint(blueprint_id)
-        return Item.Item(self.request_product, blueprint_id, product_id, quantity_produced_per_run, inputs)
+        return Item.Item(self, blueprint_id, product_id, quantity_produced_per_run, inputs)
 
     def create_raw_material(self, product_id):
         return Item.RawMaterial(product_id)
@@ -58,13 +61,13 @@ class BlueprintFactory:
     def janice_print_components(self):
         for value in self.products.values():
             if type(value) == Item.Item:
-                print(f"{self.get_name_for_type_id(value.product_id)}\t{value.amount_requested_from_upstream}")
+                print(f"{value.product_id}:{self.get_name_for_type_id(value.product_id)}\t{value.get_quantity_needed()}")
 
 
 if __name__ == "__main__":
     x = BlueprintFactory(DATABASE_PATH)
-    x.request_product(61207, 200)
+    x.request_product(22548, 1)
     x.janice_print_raws()
     print("-------")
-    x.janice_print_components()
+    # x.janice_print_components()
 
