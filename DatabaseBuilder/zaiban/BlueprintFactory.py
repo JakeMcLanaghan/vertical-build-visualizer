@@ -19,6 +19,7 @@ class BlueprintFactory:
         self.database = sqlite3.connect(DATABASE_PATH)
         self.stockpile = Stockpile.Stockpile()
         self.stockpile.process_stockpile_file()
+        self.stockpile.process_in_progress_jobs_file()
         self.level_counter = -1
         self.items_to_treat_as_raw = self.get_items_to_treat_as_raw()
 
@@ -48,7 +49,14 @@ class BlueprintFactory:
         return Item.Item(self, blueprint_id, product_id, quantity_produced_per_run, inputs, material_efficiency)
 
     def create_raw_material(self, product_id):
-        return Item.RawMaterial(product_id)
+        return Item.RawMaterial(self, product_id)
+
+    def get_number_of_product_id_requested(self, product_id):
+        if product := self.products.get(product_id, None):
+            return product.amount_requested_from_upstream
+        else:
+            return 0
+
 
     def request_product(self, product_id, quantity_needed, material_efficiency=10):
         self.level_counter += 1
@@ -72,13 +80,20 @@ class BlueprintFactory:
 
 
     def janice_print_raws(self):
+        values = []
         for value in self.products.values():
-            if type(value) == Item.RawMaterial:
+            values.append(value)
+        def sort_foo(item):
+            return item.product_id
+
+        values.sort(key=sort_foo)
+        for value in values:
+            if type(value) == Item.RawMaterial and value.get_quantity_needed() > 0:
                 print(f"{self.get_name_for_type_id(value.product_id)}\t{value.amount_requested_from_upstream}")
 
     def janice_print_components(self):
         for value in self.products.values():
-            if type(value) == Item.Item and value.build_type == BUILD_TYPES['manufacturing']:
+            if type(value) == Item.Item and value.build_type == BUILD_TYPES['manufacturing'] and value.get_quantity_needed() > 0:
                 # print(f"{value.product_id}:{self.get_name_for_type_id(value.product_id)}\t{value.get_quantity_needed()}")
                 # print(f"{self.get_name_for_type_id(value.product_id)}\t{value.get_quantity_needed()}\tjob_cost: {value.get_job_cost()}")
                 print(f"{self.get_name_for_type_id(value.product_id)}\t{value.get_quantity_needed()}")
@@ -93,21 +108,33 @@ class BlueprintFactory:
         steps.sort(reverse=True, key=sorting_func)
         level = 0
         n = 0
-        n2 = 0
         print(f"==========================")
         level = steps[0].job_level
-        for step in steps:
+        level_steps = []
+        for step in steps: #TODO - this loop is disgusting, make it nice
             if step.job_level != level:
-                print(f"========================== x{n}")
+                def sort_foo(step):
+                    return database_handler.get_name_for_type_id(step.product_id)
+                level_steps.sort(key=sort_foo)
+                for level_step in level_steps:
+                    print_line = f"{level_step.job_level}:\t{self.get_name_for_type_id(level_step.product_id)}\t- {level_step.runs_requested_downstream} jobs"
+                    if self.stockpile.jobs.get(level_step.product_id, 0) == level_step.runs_requested_downstream:
+                        print_line += " [IN PROGRESS]"
+                    elif level_step.is_step_blocked():
+                        print_line += " [BLOCKED]"
+                    print(print_line)
+                print(f"========================== x{len(level_steps)}")
+                level_steps.clear()
                 level = step.job_level
-                n2 += n
-                n = 0
             n += 1
             if step.runs_requested_downstream > 0:
-                print(f"{step.job_level}:\t{self.get_name_for_type_id(step.product_id)}\t- {step.runs_requested_downstream} jobs")
+                level_steps.append(step)
         else:
-            print(f"========================== x{n}")
-            print(f"========================== x{n2} total")
+            for level_step in level_steps:
+                print(
+                    f"{level_step.job_level}:\t{self.get_name_for_type_id(level_step.product_id)}\t- {level_step.runs_requested_downstream} jobs")
+            print(f"========================== x{len(level_steps)}")
+            print(f"========================== x{n} total")
 
 
 

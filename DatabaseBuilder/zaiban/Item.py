@@ -34,6 +34,12 @@ class Item:
         self.amount_requested_from_upstream -= self.blueprint_factory.stockpile.get_quantity_of_type_id_in_stockpile(self.product_id)
         self.job_level = -1
 
+    def is_step_blocked(self):
+        for product_id, quantity_required in self.inputs:
+            if self.blueprint_factory.get_number_of_product_id_requested(product_id) > 0:
+                return True
+        return False
+
     def set_level(self, level):
         if self.job_level < level:
             self.job_level = level
@@ -80,12 +86,17 @@ class Item:
 
 
 class RawMaterial:
-    def __init__(self, product_id):
+    def __init__(self, blueprint_factory, product_id):
+        self.blueprint_factory = blueprint_factory
         self.product_id = product_id
         self.amount_requested_from_upstream = 0
+        self.amount_requested_from_upstream -= self.blueprint_factory.stockpile.get_quantity_of_type_id_in_stockpile(self.product_id)
 
     def request(self, quantity_requested):
         self.amount_requested_from_upstream += quantity_requested
+
+    def get_quantity_needed(self):
+        return max(self.amount_requested_from_upstream, 0)
 
     def get_job_cost(self):
         return 0
