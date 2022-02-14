@@ -11,7 +11,6 @@ class DatabaseHandler:
         self.connection.close()
 
     def get_type_id_for_name(self, name):
-        print(name)
         todo = self.connection.execute(
             f"SELECT {TYPE_ID_COLUMN} FROM {TYPE_ID_AND_EN_NAME_TABLE} WHERE {EN_NAME_COLUMN} = ?", (name,)).fetchall()
         assert len(todo) == 1, f"expected 1 value returned from query, actual: {name}"

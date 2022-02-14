@@ -48,7 +48,13 @@ class Item:
         return max(self.amount_requested_from_upstream, 0)
 
     def get_runs_required(self):
-        return max(math.ceil(self.amount_requested_from_upstream / self.quantity_produced_per_run), 0)
+        # total runs needed
+        runs_needed = math.ceil(self.amount_requested_from_upstream / self.quantity_produced_per_run)
+        # account for in progress runs
+        runs_needed -= self.blueprint_factory.stockpile.jobs.get(self.product_id, 0)
+        # cannot be negative
+        return max(runs_needed, 0)
+
 
     def request(self, quantity_requested):
         self.set_level(self.blueprint_factory.level_counter)

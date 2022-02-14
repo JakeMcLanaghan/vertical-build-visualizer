@@ -118,9 +118,7 @@ class BlueprintFactory:
                 level_steps.sort(key=sort_foo)
                 for level_step in level_steps:
                     print_line = f"{level_step.job_level}:\t{self.get_name_for_type_id(level_step.product_id)}\t- {level_step.runs_requested_downstream} jobs"
-                    if self.stockpile.jobs.get(level_step.product_id, 0) == level_step.runs_requested_downstream:
-                        print_line += " [IN PROGRESS]"
-                    elif level_step.is_step_blocked():
+                    if level_step.is_step_blocked():
                         print_line += " [BLOCKED]"
                     print(print_line)
                 print(f"========================== x{len(level_steps)}")

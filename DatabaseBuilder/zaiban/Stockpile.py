@@ -33,7 +33,6 @@ class Stockpile:
         with open(STOCKPILE_FILE_PATH) as stockpile_file:
             for line in stockpile_file.readlines():
                 split_line = line.split('\t')
-                print(split_line)
                 quantity = split_line[1]
                 if quantity == '':
                     quantity = 1
@@ -51,7 +50,6 @@ class Stockpile:
         with open(IN_PROGRESS_JOBS_FILE_PATH) as jobs_file:
             for line in jobs_file.readlines():
                 split_line = line.split('\t')
-                print(split_line)
                 blueprint_name = split_line[3]
                 job_runs = split_line[1]
                 yield blueprint_name, int(job_runs)
